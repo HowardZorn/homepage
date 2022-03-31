@@ -168,7 +168,9 @@ static void __exit hello_param_exit(void)
 module_init(hello_param_init);
 module_exit(hello_param_exit);
 ```
-这个例子改编自[The Linux Kernel Module Programming Guide](https://tldp.org/LDP/lkmpg/2.6/html/index.html)，虽然是v2.6时代的东西，但是功能仍然基本正常。
+这个例子改编自[The Linux Kernel Module Programming Guide (LKMPG)](https://tldp.org/LDP/lkmpg/2.6/html/index.html)，虽然是v2.6时代的东西，但是功能仍然基本正常。
+
+> Update: 现在请看https://sysprog21.github.io/lkmpg/，Jim Huang将LKMPG升级到了v5.x，感谢他的工作。
 
 编译完了用`modinfo`观察下，发现已经记录到`parm`信息中了。
 
@@ -241,12 +243,50 @@ zsh: permission denied: /sys/module/HelloParam/parameters/mylong
 已经够清楚了，俺不整了。
 
 ## `module_param_cb`
+
+前面说到，使用sysfs，我们可以修改和读取有特定权限的参数。但是这并不完美，很多时候参数需要经过验证是有效的方可修改，或者我们需要在读写时附加其它操作。这就需要使用`module_param_cb`宏：
+
+```c
+module_param_cb(name, ops, arg, perm)
+```
+
 `module_param_cb`的`ops`需要传入一个`struct kernel_param_ops`，`arg`是一个`struct kernel_param*`
+
 ```c
 struct kernel_param_ops {
-    int (*set)(const char *val, const struct kernel_param *kp);
-    int (*get)(char *buffer, const struct kernel_param *kp);
-    void (*free)(void *arg);
+	/* How the ops should behave */
+	unsigned int flags;
+	/* Returns 0, or -errno.  arg is in kp->arg. */
+	int (*set)(const char *val, const struct kernel_param *kp);
+	/* Returns length written or -errno.  Buffer is 4k (ie. be short!) */
+	int (*get)(char *buffer, const struct kernel_param *kp);
+	/* Optional function to free kp->arg when module unloaded. */
+	void (*free)(void *arg);
+};
+
+/*
+ * Flags available for kernel_param
+ *
+ * UNSAFE - the parameter is dangerous and setting it will taint the kernel
+ * HWPARAM - Hardware param not permitted in lockdown mode
+ */
+enum {
+	KERNEL_PARAM_FL_UNSAFE	= (1 << 0),
+	KERNEL_PARAM_FL_HWPARAM	= (1 << 1),
+};
+
+struct kernel_param {
+	const char *name;
+	struct module *mod;
+	const struct kernel_param_ops *ops;
+	const u16 perm;
+	s8 level;
+	u8 flags;
+	union {
+		void *arg;
+		const struct kparam_string *str;
+		const struct kparam_array *arr;
+	};
 };
 ```
 

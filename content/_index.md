@@ -20,7 +20,7 @@ Hello! I'm Ruozhou HE. I'm a postgraduate student majored in computer science. H
 - Bachelor of Engineering, Computer Science and Engineering, Hefei University of Technology (2017 - 2021). 
   - Thesis: "Design and Implementation of Traffic Forecast System Based on Deep Learning"
 
-- High Scool (Science), Huizhou No.1 Middle School.
+- High School, Science, Huizhou No.1 Middle School.
 
 ## External Links
 
